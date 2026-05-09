@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ffffff">
+<title>ディズニー3日間プラン</title>
+<style>
+:root {
+  --c-bg: #ffffff;
+  --c-surface: #f8f9fa;
+  --c-border: #eeeeee;
+  --c-text: #1a1a1a;
+  --c-sub: #888888;
+  --c-primary: #d946a4;
+  --c-primary-light: #fdf2f8;
+  --c-day1: #f59e0b;
+  --c-day2: #3b82f6;
+  --c-day3: #14b8a6;
+  --c-danger: #ef4444;
+  --c-success: #22c55e;
+  --c-warning: #fb923c;
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.07);
+  --shadow-modal: 0 -4px 24px rgba(0,0,0,0.10);
+  --transition: 0.18s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: var(--c-bg); color: var(--c-text);
+  font-size: 16px; line-height: 1.6;
+  -webkit-text-size-adjust: 100%; overscroll-behavior: none;
+}
+#app {
+  max-width: 430px; margin: 0 auto;
+  min-height: 100dvh; display: flex; flex-direction: column;
+}
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; border: none; background: none; color: inherit; }
+.tappable {
+  transition: transform var(--transition), opacity var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.tappable:active { transform: scale(0.97); opacity: 0.85; }
+
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--c-border);
+  padding: 0 16px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+header h1 { font-size: 18px; font-weight: 700; }
+header .sub { font-size: 11px; color: var(--c-sub); font-weight: 500; }
+
+main {
+  flex: 1; overflow-y: auto;
+  padding: 16px 0 calc(80px + env(safe-area-inset-bottom));
+}
+
+nav#bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--c-border);
+  display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 100;
+}
+.nav-btn {
+  flex: 1; height: 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 10px; color: var(--c-sub); font-weight: 600;
+}
+.nav-btn .nav-icon { font-size: 20px; }
+.nav-btn.active { color: var(--c-primary); }
+.nav-btn .nav-badge {
+  position: absolute; top: 8px; min-width: 18px; height: 18px;
+  background: var(--c-danger); color: #fff; border-radius: 9px;
+  font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 18px;
+  border: 2px solid var(--c-bg);
+  display: none;
+}
+
+.section-title {
+  font-size: 13px; font-weight: 600; color: var(--c-sub);
+  padding: 0 16px; margin: 16px 0 8px;
+  letter-spacing: 0.02em;
+}
+.card {
+  background: var(--c-bg); border: 1px solid var(--c-border);
+  border-radius: var(--radius-m); padding: 14px 16px;
+  margin: 0 16px 10px; box-shadow: var(--shadow-card);
+}
+
+/* === Todo === */
+.todo-priority {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px; margin-right: 6px;
+  vertical-align: middle;
+}
+.prio-1 { background: #fee2e2; color: #b91c1c; }
+.prio-2 { background: #fef3c7; color: #b45309; }
+.prio-3 { background: #d1fae5; color: #047857; }
+.prio-4 { background: #dbeafe; color: #1e40af; }
+
+.todo-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--c-border);
+}
+.todo-item:last-child { border-bottom: none; }
+.todo-check {
+  flex-shrink: 0; width: 24px; height: 24px;
+  border: 2px solid var(--c-border); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+  background: var(--c-bg);
+  transition: all var(--transition);
+}
+.todo-check.done {
+  background: var(--c-primary); border-color: var(--c-primary);
+  color: #fff;
+}
+.todo-check.done::after { content: '✓'; font-size: 14px; font-weight: 700; }
+.todo-content { flex: 1; min-width: 0; }
+.todo-title {
+  font-size: 15px; font-weight: 600; line-height: 1.4;
+  margin-bottom: 2px;
+}
+.todo-item.done .todo-title { text-decoration: line-through; color: var(--c-sub); }
+.todo-detail {
+  font-size: 13px; color: var(--c-sub); line-height: 1.5;
+}
+.todo-deadline {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  color: var(--c-danger); margin-top: 4px;
+  background: #fee2e2; padding: 2px 8px; border-radius: 4px;
+}
+
+/* === Progress === */
+.progress-card {
+  margin: 0 16px 16px;
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  border-radius: var(--radius-m);
+  padding: 16px;
+}
+.progress-bar {
+  height: 8px; background: rgba(255,255,255,0.6);
+  border-radius: 4px; overflow: hidden; margin-top: 8px;
+}
+.progress-fill {
+  height: 100%; background: var(--c-primary);
+  border-radius: 4px; transition: width 0.4s ease;
+}
+
+/* === Schedule === */
+.day-hero {
+  margin: 0 16px 16px; padding: 20px 16px;
+  border-radius: var(--radius-m); color: #fff;
+  position: relative; overflow: hidden;
+}
+.day-hero.day1 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.day-hero.day2 { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+.day-hero.day3 { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+.day-hero h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.day-hero p { font-size: 13px; opacity: 0.95; }
+
+.timeline {
+  margin: 0 16px;
+  border-left: 2px solid var(--c-border);
+  padding-left: 0;
+  position: relative;
+}
+.tl-item {
+  position: relative;
+  padding: 0 0 18px 24px;
+  margin-left: 0;
+}
+.tl-item::before {
+  content: ''; position: absolute;
+  left: -7px; top: 4px;
+  width: 12px; height: 12px;
+  background: var(--c-bg); border: 2px solid var(--c-primary);
+  border-radius: 50%;
+}
+.tl-item.highlight::before {
+  background: var(--c-primary);
+}
+.tl-time {
+  font-size: 13px; font-weight: 700; color: var(--c-primary);
+  margin-bottom: 2px;
+}
+.tl-title {
+  font-size: 15px; font-weight: 600; line-height: 1.4;
+  margin-bottom: 2px;
+}
+.tl-detail {
+  font-size: 13px; color: var(--c-sub); line-height: 1.5;
+}
+.tl-warn {
+  margin-top: 6px; padding: 8px 10px;
+  background: #fff7ed; border-left: 3px solid var(--c-warning);
+  border-radius: 4px;
+  font-size: 12px; color: #9a3412; line-height: 1.5;
+}
+.tl-tip {
+  margin-top: 6px; padding: 8px 10px;
+  background: var(--c-primary-light); border-left: 3px solid var(--c-primary);
+  border-radius: 4px;
+  font-size: 12px; color: #831843; line-height: 1.5;
+}
+
+/* Day color override */
+.day1-color .tl-time { color: var(--c-day1); }
+.day1-color .tl-item::before { border-color: var(--c-day1); }
+.day1-color .tl-item.highlight::before { background: var(--c-day1); }
+.day2-color .tl-time { color: var(--c-day2); }
+.day2-color .tl-item::before { border-color: var(--c-day2); }
+.day2-color .tl-item.highlight::before { background: var(--c-day2); }
+.day3-color .tl-time { color: var(--c-day3); }
+.day3-color .tl-item::before { border-color: var(--c-day3); }
+.day3-color .tl-item.highlight::before { background: var(--c-day3); }
+
+/* Sub-section in timeline */
+.tl-section {
+  margin: 12px 16px 8px;
+  padding: 8px 12px;
+  background: var(--c-surface);
+  border-radius: 6px;
+  font-size: 12px; font-weight: 700;
+  color: var(--c-sub); letter-spacing: 0.05em;
+}
+
+/* Attraction list */
+.atr-list {
+  list-style: none; padding: 0;
+  font-size: 13px; line-height: 1.7;
+  margin-top: 6px;
+}
+.atr-list li {
+  padding: 2px 0;
+}
+.atr-ok { color: var(--c-success); margin-right: 4px; }
+.atr-ng { color: var(--c-danger); margin-right: 4px; }
+.atr-warn { color: var(--c-warning); margin-right: 4px; }
+
+/* Info card */
+.info-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin: 0 16px 12px;
+}
+.info-tile {
+  background: var(--c-surface);
+  padding: 10px 12px; border-radius: 8px;
+}
+.info-tile .label {
+  font-size: 11px; color: var(--c-sub); font-weight: 600;
+  margin-bottom: 2px;
+}
+.info-tile .value {
+  font-size: 14px; font-weight: 700;
+}
+
+/* Budget */
+.budget-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--c-border);
+  font-size: 14px;
+}
+.budget-row:last-child { border-bottom: none; font-weight: 700; }
+.budget-row .label { color: var(--c-text); }
+.budget-row .amount { color: var(--c-text); font-weight: 600; font-feature-settings: "tnum"; }
+
+/* Reset button */
+.reset-btn {
+  margin: 24px 16px 8px;
+  width: calc(100% - 32px);
+  height: 40px;
+  background: transparent;
+  color: var(--c-sub);
+  font-size: 13px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-s);
+}
+
+.page { animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1 id="page-title">📋 やることリスト</h1>
+      <div class="sub">11/1(日)〜11/3(火・祝) 家族3人</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Todo Page -->
+    <div id="page-todo" class="page"></div>
+
+    <!-- DAY1 Page -->
+    <div id="page-day1" class="page" style="display:none;"></div>
+
+    <!-- DAY2 Page -->
+    <div id="page-day2" class="page" style="display:none;"></div>
+
+    <!-- DAY3 Page -->
+    <div id="page-day3" class="page" style="display:none;"></div>
+
+    <!-- Info Page -->
+    <div id="page-info" class="page" style="display:none;"></div>
+  </main>
+
+  <nav id="bottom-nav">
+    <button class="nav-btn tappable active" data-page="todo" onclick="showPage('todo')" style="position:relative;">
+      <span class="nav-icon">📋</span>
+      <span>やること</span>
+      <span class="nav-badge" id="badge-todo"></span>
+    </button>
+    <button class="nav-btn tappable" data-page="day1" onclick="showPage('day1')">
+      <span class="nav-icon">✈️</span>
+      <span>DAY1</span>
+    </button>
+    <button class="nav-btn tappable" data-page="day2" onclick="showPage('day2')">
+      <span class="nav-icon">🏰</span>
+      <span>DAY2</span>
+    </button>
+    <button class="nav-btn tappable" data-page="day3" onclick="showPage('day3')">
+      <span class="nav-icon">🌊</span>
+      <span>DAY3</span>
+    </button>
+    <button class="nav-btn tappable" data-page="info" onclick="showPage('info')">
+      <span class="nav-icon">💡</span>
+      <span>情報</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// =========================
+// データ
+// =========================
+const TODOS = [
+  // 最優先(赤)
+  { id: 't1', priority: 1, title: 'シェフミッキー予約', detail: '18:00台を狙う', deadline: '10/1(木) 10:00' },
+  { id: 't2', priority: 1, title: '予約用メモ準備', detail: 'クレカ・連絡先を即入力できる状態にする' },
+  { id: 't4', priority: 1, title: 'クリスタル・パレス予約', detail: '11:10〜11:40開始を狙う。取れなければ代替ランチへ', deadline: '10/2(金) 10:00' },
+  { id: 't5', priority: 1, title: 'カナレット予約', detail: 'DAY3昼食。11:00〜11:30開始を狙う', deadline: '10/3(土) 10:00' },
+  { id: 't3', priority: 1, title: 'レストランのキャンセル拾い', detail: 'シェフミッキー・クリスタル・パレス・カナレットを再確認' },
+
+  // 1〜2ヶ月前(黄)
+  { id: 't10', priority: 2, title: '1955東京ベイ予約確認', detail: '11/1・11/2の2泊予約を確認' },
+  { id: 't11', priority: 2, title: 'パークチケット購入', detail: '大人2名×2日分。日付価格を公式で確認。子は無料' },
+  { id: 't12', priority: 2, title: '公式アプリ設定', detail: 'アカウント・クレカ・チケット紐付け' },
+  { id: 't13', priority: 2, title: 'GO/Uber登録', detail: 'DAY1夜のタクシー用' },
+  { id: 't14', priority: 2, title: '往路リムジンバス予約', detail: '11/1 羽田→ディズニー方面' },
+  { id: 't15', priority: 2, title: '復路リムジンバス予約', detail: '11/3 15:25発。15:55も保険' },
+  { id: 't16', priority: 2, title: 'お土産お気に入り登録', detail: '当日迷わないよう候補だけ保存' },
+  { id: 't17', priority: 2, title: 'キャラクター慣らし', detail: 'ミッキー動画を見せて反応確認' },
+  { id: 't18', priority: 2, title: '美女と野獣の反応確認', detail: '暗い場面・音を怖がらないか見る' },
+  { id: 't19', priority: 2, title: 'ベビーカー準備', detail: '抱っこ紐・雨具・防寒も確認' },
+
+  // 1週間前(緑)
+  { id: 't20', priority: 3, title: 'ホテルシャトル確認', detail: '11月版、特に夜便' },
+  { id: 't21', priority: 3, title: '11月運営時間確認', detail: '10/8頃に公式確認。9:00想定は仮置き' },
+  { id: 't22', priority: 3, title: '天気確認', detail: '雨なら屋内中心へ' },
+  { id: 't23', priority: 3, title: 'モバイルバッテリー充電', detail: '2個あると安心' },
+
+  // 前日(青)
+  { id: 't30', priority: 4, title: '荷物パッキング', detail: '手荷物と発送分を分ける' },
+  { id: 't31', priority: 4, title: 'スマホ充電満タン', detail: '出発時100%スタート' },
+  { id: 't32', priority: 4, title: '母子手帳・保険証', detail: '必ず携帯' },
+  { id: 't33', priority: 4, title: 'アプリ動作確認', detail: 'チケット表示まで確認' },
+  { id: 't34', priority: 4, title: '配送伝票準備', detail: '自宅住所を控える' },
+];
+
+const PRIORITY_LABEL = {
+  1: { label: '最優先', cls: 'prio-1' },
+  2: { label: '1〜2ヶ月前', cls: 'prio-2' },
+  3: { label: '1週間前', cls: 'prio-3' },
+  4: { label: '前日', cls: 'prio-4' },
+};
+
+// =========================
+// State
+// =========================
+const KEY = 'disney_trip_v1';
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || { done: {} }; }
+  catch { return { done: {} }; }
+}
+let state = loadData();
+const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+
+const haptic = (type = 'light') => navigator.vibrate?.(type === 'heavy' ? 30 : 10);
+
+function toggleTodo(id) {
+  state.done[id] = !state.done[id];
+  save();
+  haptic();
+  renderTodo();
+  updateBadge();
+}
+
+function resetTodo() {
+  if (!confirm('すべてのチェックをリセットしますか？')) return;
+  state.done = {};
+  save();
+  renderTodo();
+  updateBadge();
+  haptic('heavy');
+}
+
+// =========================
+// Render: Todo
+// =========================
+function renderTodo() {
+  const total = TODOS.length;
+  const doneCount = TODOS.filter(t => state.done[t.id]).length;
+  const percent = Math.round(doneCount / total * 100);
+
+  const groups = {};
+  TODOS.forEach(t => {
+    if (!groups[t.priority]) groups[t.priority] = [];
+    groups[t.priority].push(t);
+  });
+
+  let html = `
+    <div class="progress-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:13px;color:var(--c-sub);font-weight:600;">準備の進捗</div>
+          <div style="font-size:24px;font-weight:700;margin-top:2px;">${doneCount} / ${total} 完了</div>
+        </div>
+        <div style="font-size:32px;font-weight:700;color:var(--c-primary);">${percent}%</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${percent}%;"></div>
+      </div>
+    </div>
+  `;
+
+  [1,2,3,4].forEach(p => {
+    if (!groups[p]) return;
+    const meta = PRIORITY_LABEL[p];
+    html += `<div class="section-title">
+      <span class="todo-priority ${meta.cls}">${meta.label}</span>
+    </div>`;
+    html += `<div class="card">`;
+    groups[p].forEach(t => {
+      const done = state.done[t.id];
+      html += `
+        <div class="todo-item tappable ${done ? 'done' : ''}" onclick="toggleTodo('${t.id}')">
+          <div class="todo-check ${done ? 'done' : ''}"></div>
+          <div class="todo-content">
+            <div class="todo-title">${t.title}</div>
+            <div class="todo-detail">${t.detail}</div>
+            ${t.deadline ? `<div class="todo-deadline">⏰ ${t.deadline}</div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  });
+
+  html += `<button class="reset-btn tappable" onclick="resetTodo()">チェックをリセット</button>`;
+
+  document.getElementById('page-todo').innerHTML = html;
+}
+
+function updateBadge() {
+  const remain = TODOS.filter(t => !state.done[t.id]).length;
+  const badge = document.getElementById('badge-todo');
+  badge.style.display = remain > 0 ? 'block' : 'none';
+  badge.textContent = remain > 99 ? '99+' : remain;
+}
+
+// =========================
+// Schedule rendering helper
+// =========================
+function tlItem({ time, title, detail, warn, tip, highlight }) {
+  return `
+    <div class="tl-item ${highlight ? 'highlight' : ''}">
+      <div class="tl-time">${time}</div>
+      <div class="tl-title">${title}</div>
+      ${detail ? `<div class="tl-detail">${detail}</div>` : ''}
+      ${warn ? `<div class="tl-warn">⚠️ ${warn}</div>` : ''}
+      ${tip ? `<div class="tl-tip">💡 ${tip}</div>` : ''}
+    </div>
+  `;
+}
+
+function tlSection(label) {
+  return `<div class="tl-section">${label}</div>`;
+}
+
+// =========================
+// DAY1
+// =========================
+function renderDay1() {
+  const html = `
+    <div class="day-hero day1">
+      <h2>DAY 1 / 11月1日(日)</h2>
+      <p>移動 & シェフミッキー</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-tile"><div class="label">羽田着</div><div class="value">12:40</div></div>
+      <div class="info-tile"><div class="label">チェックイン</div><div class="value">15:00</div></div>
+      <div class="info-tile"><div class="label">シェフミッキー</div><div class="value">18:00</div></div>
+      <div class="info-tile"><div class="label">就寝目標</div><div class="value">20:30</div></div>
+    </div>
+
+    <div class="timeline day1-color">
+      ${tlItem({ time: '12:40', title: '羽田空港着', detail: 'ベビーカー&荷物受取(15-20分)' })}
+      ${tlItem({ time: '13:00-13:30', title: '軽食・トイレ・バス停移動', detail: '空港内で軽く食べておく' })}
+      ${tlItem({ time: '13:30', title: '羽田発リムジンバス乗車', detail: '大人1,300円×2。子は膝上なら無料、座席利用は小児運賃', highlight: true })}
+      ${tlItem({ time: '14:30', title: 'タクシーで1955東京ベイへ', detail: '約10分・1,500円程度' })}
+      ${tlItem({ time: '15:00', title: 'チェックイン', detail: 'セルフチェックイン方式' })}
+      ${tlItem({ time: '15:00-16:30', title: '🛌 子どもお昼寝', detail: '妻と交代でロビーカフェ。体力温存最重要', highlight: true })}
+      ${tlItem({ time: '16:30', title: '部屋で軽食', detail: '離乳食orおやつ少量。シェフミッキー対策', tip: '満腹で会場到着すると食べられない' })}
+      ${tlItem({ time: '16:50', title: 'ホテル無料シャトルでランドへ', detail: '約30分' })}
+      ${tlItem({ time: '17:20', title: 'ランドバス停→アンバサダーへ徒歩', detail: 'ベビーカーで約10分・約650m・平坦' })}
+      ${tlItem({ time: '17:30', title: '🏨 アンバサダー着・ロビー待機', detail: 'ミッキー装飾で子のテンション上げ。トイレ&オムツ替えを済ませる' })}
+      ${tlItem({ time: '18:00-19:30', title: '🐭 シェフミッキー(90分制)', detail: 'ぐずったら片方が外で抱っこ対応', highlight: true })}
+      ${tlItem({ time: '19:40', title: 'GOアプリでタクシー配車', warn: '1955直行シャトルは11月版時刻表を確認。遅い時間はタクシー判断' })}
+      ${tlItem({ time: '19:55', title: 'タクシー乗車' })}
+      ${tlItem({ time: '20:10', title: '🏨 ホテル着・入浴・就寝' })}
+    </div>
+  `;
+  document.getElementById('page-day1').innerHTML = html;
+}
+
+// =========================
+// DAY2
+// =========================
+function renderDay2() {
+  const html = `
+    <div class="day-hero day2">
+      <h2>DAY 2 / 11月2日(月)</h2>
+      <p>東京ディズニーランド</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-tile"><div class="label">入園</div><div class="value">9:00</div></div>
+      <div class="info-tile"><div class="label">購入候補</div><div class="value">美女と野獣</div></div>
+      <div class="info-tile"><div class="label">昼食</div><div class="value">クリスタル・パレス</div></div>
+      <div class="info-tile"><div class="label">退園</div><div class="value">19:30-20:00</div></div>
+    </div>
+
+    <div class="timeline day2-color">
+      ${tlSection('🌅 朝')}
+      ${tlItem({ time: '7:30', title: '起床・朝食', detail: '混む時間を外す' })}
+      ${tlItem({ time: '8:30', title: 'ホテルシャトルでランドへ', detail: '約30分' })}
+      ${tlItem({ time: '9:00', title: 'ランド入園' })}
+
+      ${tlSection('⚡ 入園直後')}
+      ${tlItem({ time: 'すぐ', title: '① 美女と野獣プレミアアクセス', detail: '13:30〜15:00台を狙う。2,000円×2。1人座り条件あり', highlight: true })}
+      ${tlItem({ time: '同時', title: '② プライオリティパス', detail: '第1候補:プーさん／第2候補:モンスターズ・インク。プーさんは1人座り条件あり' })}
+      ${tlItem({ time: '同時', title: '③ ジャンボリミッキー', detail: '全公演にエントリー' })}
+      ${tlItem({ time: '余裕があれば', title: '④ スタンバイパス', detail: 'ショップ・カプセルトイ目的がある時だけ' })}
+
+      ${tlSection('🎢 午前')}
+      ${tlItem({ time: '9:30', title: '午前の子ども向けアトラクション', detail: 'プーさんの時間が近ければプーさんへ。遠ければスモールワールドやファンタジーランドへ', highlight: true })}
+      ${tlItem({ time: '10:30', title: 'イッツ・ア・スモールワールド' })}
+      ${tlItem({ time: '11:00', title: '軽めのファンタジーランド', detail: '暗い系は子の様子で判断' })}
+
+      ${tlSection('🍽️ ランチ')}
+      ${tlItem({ time: '11:10-12:20', title: 'ランチ', detail: '第1候補はクリスタル・パレス。取れなければプラザパビリオン／ハングリーベア／モバイルオーダー', highlight: true })}
+      ${tlItem({ time: '12:30', title: 'お土産下見', detail: 'お気に入り登録だけ。購入は後回し' })}
+
+      ${tlSection('💤 午後')}
+      ${tlItem({ time: '13:30', title: 'トゥーンタウン周辺' })}
+      ${tlItem({ time: '指定時間', title: '美女と野獣', detail: '1人座り条件あり。子の様子優先で無理しない', highlight: true })}
+      ${tlItem({ time: '14:30-16:00', title: '🛌 ベビーカー昼寝・親の休憩', detail: '美女と野獣後は無理に並ばない。トゥーンタウン周辺、ワールドバザール、カフェで体力回復。ジャンボリミッキー当選時はこの時間に合わせて調整。' })}
+
+      ${tlSection('🌆 夕方〜夜')}
+      ${tlItem({ time: '16:00-17:00', title: '🎈 軽めに再開', detail: '子どもが元気ならフィルハーマジック、ウエスタンリバー鉄道、ジャングルクルーズ、トゥーンタウン散策。疲れていたら早め夕食へ。' })}
+      ${tlItem({ time: '17:00-18:30', title: '夕食', detail: '屋内優先。子どもの疲れが強ければ食後に撤退。' })}
+      ${tlItem({ time: '19:00', title: '撤退判断', detail: '元気ならパレード、崩れたらホテルへ' })}
+      ${tlItem({ time: '19:30-20:30', title: '退園・シャトル', warn: '21:30前目安。11月版時刻表を確認', highlight: true })}
+      ${tlItem({ time: '就寝前', title: '宅配便発送', detail: '機内持込以外を送る' })}
+    </div>
+  `;
+  document.getElementById('page-day2').innerHTML = html;
+}
+
+// =========================
+// DAY3
+// =========================
+function renderDay3() {
+  const html = `
+    <div class="day-hero day3">
+      <h2>DAY 3 / 11月3日(火・祝)</h2>
+      <p>ディズニーシー & 帰路</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-tile"><div class="label">入園</div><div class="value">9:00</div></div>
+      <div class="info-tile"><div class="label">退園</div><div class="value">15:00死守</div></div>
+      <div class="info-tile"><div class="label">バス</div><div class="value">15:25</div></div>
+      <div class="info-tile"><div class="label">羽田発</div><div class="value">18:05</div></div>
+    </div>
+
+    <div class="timeline day3-color">
+      ${tlSection('🌅 出発前')}
+      ${tlItem({ time: '7:00', title: '起床・朝食' })}
+      ${tlItem({ time: '8:00', title: 'チェックアウト', detail: '手荷物だけ持つ', highlight: true })}
+      ${tlItem({ time: '8:00', title: 'ホテルシャトルでシーへ', detail: '約30分' })}
+      ${tlItem({ time: '9:00', title: 'シー入園' })}
+      ${tlItem({ time: '入園直後', title: 'パス確認', detail: 'プライオリティパスはマジックランプ優先。スタンバイパスはショップ目的のみ', tip: '13:30以降の枠は取らない' })}
+
+      ${tlSection('🧚 ファンタジースプリングス')}
+      ${tlItem({ time: '9:30', title: 'ファンタジースプリングスは写真優先', detail: 'ピーターパンは短時間なら乗る。混んでいたら深追いしない', highlight: true })}
+      ${tlItem({ time: '10:30', title: '写真・散策' })}
+      ${tlItem({ time: '11:00', title: 'ティンカーベル', detail: '乗れたらでOK' })}
+
+      ${tlSection('🍽️ ランチ')}
+      ${tlItem({ time: '11:00-12:00', title: 'カナレットで早めランチ', detail: '11:00〜11:30予約を狙う。取れなければ近場の屋内店かモバイルオーダーへ', highlight: true })}
+
+      ${tlSection('🧜‍♀️ マーメイドラグーン')}
+      ${tlItem({ time: '12:00-13:30', title: '子ども向け中心', detail: `<ul class="atr-list">
+        <li><span class="atr-ok">✓</span>アリエルのプレイグラウンド</li>
+        <li><span class="atr-ok">✓</span>ワールプール</li>
+        <li><span class="atr-warn">△</span>ジェリーフィッシュ</li>
+        <li><span class="atr-ng">✗</span>フランダーは身長注意</li>
+      </ul>` })}
+
+      ${tlSection('💤 午後')}
+      ${tlItem({ time: '13:30', title: 'アラビアンコースト', detail: 'マジックランプ or カルーセル' })}
+      ${tlItem({ time: '14:30', title: '出口方面へ', detail: '買い物は短時間' })}
+
+      ${tlSection('🚌 撤収')}
+      ${tlItem({ time: '15:00', title: '退園', warn: '14:30退園も保険', highlight: true })}
+      ${tlItem({ time: '15:25', title: '羽田行きバス', detail: '15:55便も保険', highlight: true })}
+      ${tlItem({ time: '16:05-16:25', title: '羽田着' })}
+      ${tlItem({ time: '18:05', title: '羽田発', highlight: true })}
+    </div>
+  `;
+  document.getElementById('page-day3').innerHTML = html;
+}
+
+// =========================
+// Info
+// =========================
+function renderInfo() {
+  const html = `
+    <div class="section-title">📌 重要ルール</div>
+    <div class="card">
+      <div style="font-size:14px;line-height:2;">
+        <div>1️⃣ シェフミッキー: 10/1 10:00</div>
+        <div>2️⃣ クリスタル・パレス: 10/2 10:00</div>
+        <div>3️⃣ カナレット: 10/3 10:00</div>
+        <div>4️⃣ DAY2朝: 美女と野獣プレミアアクセス→プーさんプライオリティパス</div>
+        <div>5️⃣ DAY3は15:00退園死守</div>
+      </div>
+    </div>
+
+    <div class="section-title">🎫 パス優先順位</div>
+    <div class="card">
+      <div style="font-size:13px;line-height:1.8;">
+        <div><b style="color:var(--c-day2);">ランド:</b> ①美女と野獣プレミアアクセス ②プーさんのプライオリティパス ③ジャンボリミッキー ④ショップのスタンバイパス</div>
+        <div><b style="color:var(--c-day3);">シー:</b> ①マジックランプのプライオリティパス ②ファンタジースプリングス系プレミアアクセスは午前〜昼前のみ ③ショップのスタンバイパス</div>
+      </div>
+    </div>
+
+    <div class="section-title">🎒 持ち物</div>
+    <div class="card">
+      <div style="font-size:13px;line-height:1.8;">
+        <div><b>必須:</b>現金・クレカ・保険証・母子手帳</div>
+        <div><b>子ども:</b>ベビーカー・抱っこ紐・離乳食・おやつ・オムツ・着替え</div>
+        <div><b>パーク:</b>雨具・防寒・モバイルバッテリー</div>
+      </div>
+    </div>
+
+    <div class="section-title">💰 概算予算</div>
+    <div class="card">
+      <div class="budget-row"><span class="label">パークチケット</span><span class="amount">大人2名×2日分</span></div>
+      <div class="budget-row"><span class="label">プレミアアクセス（美女と野獣）</span><span class="amount">4,000円</span></div>
+      <div class="budget-row"><span class="label">シェフミッキー</span><span class="amount">16,000-18,000円目安</span></div>
+      <div class="budget-row"><span class="label">カナレット昼食</span><span class="amount">公式メニューで確認</span></div>
+      <div class="budget-row"><span class="label">移動・配送</span><span class="amount">約12,200円〜</span></div>
+      <div class="budget-row"><span class="label">合計</span><span class="amount">チケット価格確定後に更新</span></div>
+    </div>
+
+    <div class="section-title">🌧️ 雨天時</div>
+    <div class="card">
+      <div style="font-size:13px;line-height:1.8;">
+        <div><b>ランド:</b>屋内アトラクション中心</div>
+        <div><b>シー:</b>マーメイドラグーン中心</div>
+      </div>
+    </div>
+
+    <div class="section-title">⚠️ 判断基準</div>
+    <div class="card">
+      <div style="font-size:13px;line-height:1.8;">
+        <div>• 子が崩れたら休憩・撤退を優先</div>
+        <div>• DAY3は長時間待ちをしない</div>
+        <div>• 夜便・運営時間は10/8頃〜直前確認</div>
+      </div>
+    </div>
+
+    <div style="height:24px;"></div>
+  `;
+  document.getElementById('page-info').innerHTML = html;
+}
+
+// =========================
+// Page switching
+// =========================
+const PAGE_TITLE = {
+  todo: '📋 やることリスト',
+  day1: '✈️ DAY1 移動&シェフミッキー',
+  day2: '🏰 DAY2 ディズニーランド',
+  day3: '🌊 DAY3 ディズニーシー',
+  info: '💡 旅行情報',
+};
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.getElementById(`page-${page}`).style.display = 'block';
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  document.getElementById('page-title').textContent = PAGE_TITLE[page];
+  window.scrollTo(0, 0);
+  haptic();
+}
+
+// =========================
+// Init
+// =========================
+renderTodo();
+renderDay1();
+renderDay2();
+renderDay3();
+renderInfo();
+updateBadge();
+showPage('todo');
+</script>
+</body>
+</html>
